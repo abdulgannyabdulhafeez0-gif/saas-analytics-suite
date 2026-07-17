@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Analytics Suite - Client Dashboard</title>
+  <!-- Chart.js for Advanced Data Visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --sidebar-bg: #1e293b;
+      --card-bg: #1e293b;
+      --accent: #6366f1;
+      --accent-success: #10b981;
+      --accent-warning: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Sidebar Navigation Layout */
+    aside {
+      width: 260px;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      position: fixed;
+      height: 100vh;
+      z-index: 50;
+    }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(to right, #818cf8, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 32px;
+    }
+
+    .nav-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-item {
+      padding: 12px 16px;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-item.active, .nav-item:hover {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--text-main);
+    }
+
+    /* Main Content Region */
+    main {
+      margin-left: 260px;
+      flex: 1;
+      padding: 40px;
+      max-width: 1400px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    /* Top Metric KPIs Banner Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .kpi-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .kpi-trend {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .trend-up { color: var(--accent-success); }
+    .trend-down { color: #ef4444; }
+
+    /* Interactive Data Visualization Panel */
+    .dashboard-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-panel, .list-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    /* Client Control Filter Trigger Buttons */
+    .filter-btn {
+      background: #334155;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .filter-btn:hover {
+      background: #475569;
+    }
+
+    /* Client Activity List Row Visuals */
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .activity-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .activity-user {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .activity-action {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .status-badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-weight: 700;
+    }
+
+    .status-active { background: rgba(16, 185, 129, 0.15); color: var(--accent-success); }
+    .status-pending { background: rgba(245, 158, 11, 0.15); color: var(--accent-warning); }
+  </style>
+</head>
+<body>
+
+  <aside>
+    <div class="brand">Apex Dashboard</div>
+    <ul class="nav-links">
+      <li class="nav-item active">Overview</li>
+      <li class="nav-item">Analytics</li>
+      <li class="nav-item">Customers</li>
+      <li class="nav-item">Settings</li>
+    </ul>
+  </aside>
+
+  <main>
+    <header>
+      <div>
+        <h1>System Overview</h1>
+        <div class="subtitle">Real-time enterprise metrics monitor</div>
+      </div>
+      <button class="filter-btn" onclick="scrambleData()">Refresh Framework Data</button>
+    </header>
+
+    <!-- Top KPI Row -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-title">Monthly Recurrent Revenue</div>
+        <div class="kpi-value" id="kpi-mrr">$48,250</div>
+        <div class="kpi-trend trend-up">▲ +12.4% vs last month</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Active Platform Users</div>
+        <div class="kpi-value" id="kpi-users">10,842</div>
+        <div class="kpi-trend trend-up">▲ +8.1% vs last week</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Avg Churn Rate</div>
+        <div class="kpi-value" id="kpi-churn">1.84%</div>
+        <div class="kpi-trend trend-down">▼ -0.2% improvement</div>
+      </div>
+    </div>
+
+    <!-- Advanced Visualizations Row -->
+    <div class="dashboard-row">
+      <div class="chart-panel">
+        <div class="panel-header">
+          <div class="panel-title">Growth & Platform Performance Metrics</div>
+        </div>
+        <div style="position: relative; height:300px; width:100%;">
+          <canvas id="performanceChart"></canvas>
+        </div>
+      </div>
+
+      <div class="list-panel">
+        <div class="panel-header">
+          <div class="panel-title">Recent Client Logs</div>
+        </div>
+        <div class="activity-list">
+          <div class="activity-item">
+            <div>
+              <div class="activity-user">Acme Corp Ltd</div>
+              <div class="activity-action">Upgraded to Enterprise tier</div>
+            </div>
+            <span class="status-badge status-active">Success</span>
+          </div>
+          <div class="activity-item">
+            <div>
+              <div class="activity-user">DevLabs LLC</div>
+              <div class="activity-action">API key generated</div>
+            </div>
+            <span class="status-badge status-active">Success</span>
+          </div>
+          <div class="activity-item">
+            <div>
+              <div class="activity-user">Synergy Inc</div>
+              <div class="activity-action">Invoice payment evaluation</div>
+            </div>
+            <span class="status-badge status-pending">Pending</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Component State Logic Management 
+    let chartInstance;
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+
+    function initChart(dataValues = [12000, 19000, 32000, 50000, 42000, 63000]) {
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+          datasets: [{
+            label: 'Net Platform Growth ($)',
+            data: dataValues,
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+    }
+
+    // Dynamic state manipulation simulation engine
+    function scrambleData() {
+      // Generate randomized structured numbers
+      const newDataset = Array.from({length: 6}, () => Math.floor(Math.random() * 50000) + 20000);
+      
+      // Update chart dynamically using component methods
+      chartInstance.destroy();
+      initChart(newDataset);
+
+      // Adjust metrics counters dynamically
+      document.getElementById('kpi-mrr').innerText = '$' + (Math.floor(Math.random() * 20000) + 40000).toLocaleString();
+      document.getElementById('kpi-users').innerText = (Math.floor(Math.random() * 4000) + 9000).toLocaleString();
+    }
+
+    window.onload = () => initChart();
+  </script>
+</body>
+</html>
