@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Analytics Suite - Client Dashboard</title>
+  <!-- Chart.js for Advanced Data Visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --sidebar-bg: rgba(17, 24, 39, 0.95);
+      --card-bg: #111827;
+      --accent: #4f46e5;
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      --accent-success: #10b981;
+      --accent-warning: #f59e0b;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --border-color: rgba(255, 255, 255, 0.06);
+      --card-hover: rgba(255, 255, 255, 0.02);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 35%),
+        radial-gradient(circle at 100% 100%, rgba(167, 139, 250, 0.08) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    /* Mobile Top Navigation Header Bar */
+    .mobile-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111827;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-color);
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+    }
+
+    .menu-toggle-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Premium Responsive Sidebar Layout */
+    aside {
+      width: 280px;
+      background: var(--sidebar-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 32px 24px;
+      position: fixed;
+      height: 100vh;
+      z-index: 150;
+      top: 0;
+      left: -280px; /* Hidden off-screen by default on mobile */
+      transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    aside.open {
+      left: 0; /* Slides into frame */
+    }
+
+    /* Dimmed overlay backdrop when mobile sidebar is open */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 140;
+    }
+
+    .sidebar-overlay.show {
+      display: block;
+    }
+
+    .brand {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(to right, #818cf8, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-item {
+      padding: 14px 16px; /* Increased padding for thumbs */
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-item.active {
+      background: var(--accent-gradient);
+      color: white;
+    }
+
+    /* Main Content Region with Mobile Offsets */
+    main {
+      flex: 1;
+      padding: 100px 20px 40px 20px; /* Leave space for top fixed mobile nav */
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .view-panel {
+      display: none;
+    }
+
+    .view-panel.active {
+      display: block;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    @media (min-width: 640px) {
+      header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    /* Mobile Buttons */
+    .btn-primary {
+      background: var(--accent-gradient);
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%; /* Full-width targets on mobile */
+      text-align: center;
+    }
+
+    @media (min-width: 640px) {
+      .btn-primary { width: auto; }
+    }
+
+    /* Responsive KPI Block Grid Layout */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr; /* Stacks vertically on phone */
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (min-width: 640px) {
+      .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    /* Core Data Architecture Panel Row */
+    .dashboard-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    @media (min-width: 1100px) {
+      .dashboard-row { grid-template-columns: 2fr 1fr; }
+    }
+
+    .panel-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+
+    /* Mobile Inputs and Scrollable Tables */
+    .search-bar {
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--border-color);
+      padding: 14px;
+      border-radius: 10px;
+      color: white;
+      font-size: 15px;
+      width: 100%;
+      margin-bottom: 20px;
+      outline: none;
+    }
+
+    .table-container {
+      width: 100%;
+      overflow-x: auto; /* Allows finger-swiping side tables on small touchscreens */
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      min-width: 500px; /* Prevents columns squishing together terribly */
+    }
+
+    th, td {
+      padding: 14px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .status-pill {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 30px;
+      font-weight: 700;
+    }
+
+    .status-active { background: rgba(16, 185, 129, 0.1); color: var(--accent-success); }
+    .status-pending { background: rgba(245, 158, 11, 0.1); color: var(--accent-warning); }
+
+    /* Toast Notification Setup */
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      transform: translateY(150%);
+      background: #1e1b4b;
+      border-left: 4px solid #6366f1;
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      color: white;
+      font-weight: 600;
+      font-size: 13px;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 2000;
+    }
+
+    .toast.show { transform: translateY(0); }
+
+    /* Adaptive Desktop Media Query Breakpoints */
+    @media (min-width: 1024px) {
+      .mobile-header-bar { display: none; }
+      aside { left: 0; }
+      main { padding: 40px; margin-left: 280px; }
+      .panel-box { padding: 28px; }
+      h1 { font-size: 32px; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Mobile Structural Header -->
+  <div class="mobile-header-bar">
+    <div class="brand" style="margin-bottom: 0;">Apex</div>
+    <button class="menu-toggle-btn" onclick="toggleSidebar(true)">☰</button>
+  </div>
+
+  <!-- Dim overlay element behind side nav drawer panel -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
+
+  <!-- Sliding Application Drawer Panel -->
+  <aside id="appSidebar">
+    <div class="brand" style="justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#brand-grad)" stroke-width="3"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+          <defs><linearGradient id="brand-grad"><stop offset="0%" stop-color="#818cf8"/><stop offset="100%" stop-color="#c084fc"/></linearGradient></defs>
+        </svg>
+        Apex
+      </div>
+      <!-- Close drawer arrow button shown only on smaller layouts -->
+      <button class="menu-toggle-btn" style="font-size: 20px;" onclick="toggleSidebar(false)">✕</button>
+    </div>
+    <ul class="nav-links">
+      <li class="nav-item active" onclick="switchView('overview-panel', this)">📊 Overview</li>
+      <li class="nav-item" onclick="switchView('customers-panel', this)">👥 Customers</li>
+    </ul>
+  </aside>
+
+  <!-- Interactive Framework Canvas Space -->
+  <main>
+    
+    <!-- View 1: Main Platform Dashboard -->
+    <div id="overview-panel" class="view-panel active">
+      <header>
+        <div>
+          <h1>System Overview</h1>
+          <div class="subtitle">Real-time platform activity metrics</div>
+        </div>
+        <button class="btn-primary" onclick="refreshMetrics()">Sync Real-Time Streams</button>
+      </header>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">Monthly Recurrent Revenue</div>
+          <div class="kpi-value" id="kpi-mrr">$48,250</div>
+          <div class="kpi-trend trend-up">▲ +12.4%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Active Platform Users</div>
+          <div class="kpi-value" id="kpi-users">10,842</div>
+          <div class="kpi-trend trend-up">▲ +8.1%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Avg Churn Rate</div>
+          <div class="kpi-value" id="kpi-churn">1.84%</div>
+          <div class="kpi-trend trend-down">▼ -0.2%</div>
+        </div>
+      </div>
+
+      <div class="dashboard-row">
+        <div class="panel-box">
+          <div class="panel-title">Growth & Performance Vectors</div>
+          <div style="position: relative; height:260px; width:100%;">
+            <canvas id="performanceChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View 2: Mobile Searchable Customer Ledger -->
+    <div id="customers-panel" class="view-panel">
+      <header>
+        <div>
+          <h1>Customer Ledger</h1>
+          <div class="subtitle">Manage user accounts and status</div>
+        </div>
+      </header>
+
+      <div class="panel-box">
+        <input type="text" class="search-bar" id="tableSearch" onkeyup="filterTable()" placeholder="Search clients or plans...">
+        <div class="table-container">
+          <table id="clientTable">
+            <thead>
+              <tr>
+                <th>Company Client</th>
+                <th>Assigned Plan</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="font-weight:600;">Acme Corporation Ltd</td><td>Enterprise</td><td><span class="status-pill status-active">Active</span></td></tr>
+              <tr><td style="font-weight:600;">DevLabs Systems LLC</td><td>Professional</td><td><span class="status-pill status-active">Active</span></td></tr>
+              <tr><td style="font-weight:600;">Synergy Global Inc</td><td>Startup</td><td><span class="status-pill status-pending">Pending</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="toast" id="system-toast">⚡ Metric layers synced successfully.</div>
+
+  <script>
+    let chartInstance;
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+
+    function initChart(dataValues = [14000, 21000, 29000, 48000, 41000, 68000]) {
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+          datasets: [{
+            data: dataValues,
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.04)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.38,
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+    }
+
+    // Sidebar Mobile Toggle Controls Engine
+    function toggleSidebar(shouldOpen) {
+      const sidebar = document.getElementById('appSidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      if (shouldOpen) {
+        sidebar.classList.add('open');
+        overlay.classList.add('show');
+      } else {
+        sidebar.classList.add('open'); // structural cleanup safety
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+      }
+    }
+
+    function switchView(panelId, targetTab) {
+      document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+      
+      document.getElementById(panelId).classList.add('active');
+      targetTab.classList.add('active');
+      toggleSidebar(false); // Close sidebar automatically on selection
+    }
+
+    function refreshMetrics() {
+      const generatedMetrics = Array.from({length: 6}, () => Math.floor(Math.random() * 50000) + 25000);
+      chartInstance.destroy();
+      initChart(generatedMetrics);
+
+      document.getElementById('kpi-mrr').innerText = '$' + (Math.floor(Math.random() * 15000) + 45000).toLocaleString();
+      document.getElementById('kpi-users').innerText = (Math.floor(Math.random() * 3000) + 9500).toLocaleString();
+
+      const toast = document.getElementById('system-toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function filterTable() {
+      const query = document.getElementById('tableSearch').value.toLowerCase();
+      document.querySelectorAll('#clientTable tbody tr').forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
+      });
+    }
+
+    window.onload = () => initChart();
+  </script>
+</body>
+</html>
